@@ -18,6 +18,7 @@ import com.vaadin.flow.component.orderedlayout.FlexLayout;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.TextField;
+import com.vaadin.flow.data.provider.*;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.spring.data.VaadinSpringDataHelpers;
@@ -27,12 +28,15 @@ import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.Expression;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
+
+import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
-import org.springframework.data.domain.PageRequest;
+
+import org.springframework.data.domain.*;
 import org.springframework.data.jpa.domain.Specification;
 import pl.npesystem.data.SamplePerson;
-import pl.npesystem.services.SamplePersonService;
+import pl.npesystem.services.*;
 import pl.npesystem.views.MainLayout;
 
 @PageTitle("Logs")
@@ -40,18 +44,21 @@ import pl.npesystem.views.MainLayout;
 @Uses(Icon.class)
 public class LogsView extends Div {
 
-    private Grid<SamplePerson> grid;
+    private Grid<LogInfo> grid;
 
     private Filters filters;
-    private final SamplePersonService samplePersonService;
+    private final LogService logService;
 
-    public LogsView(SamplePersonService SamplePersonService) {
-        this.samplePersonService = SamplePersonService;
+    public LogsView(LogService logService) {
+        this.logService = logService;
         setSizeFull();
         addClassNames("logs-view");
 
         filters = new Filters(() -> refreshGrid());
-        VerticalLayout layout = new VerticalLayout(createMobileFilters(), filters, createGrid());
+        VerticalLayout layout = new VerticalLayout(createMobileFilters(), filters, createGrid(), new Button("Select LOG", e -> {
+            logService.addFile(new File("C:\\logs\\Aggregate.log"));
+            refreshGrid();
+        }));
         layout.setSizeFull();
         layout.setPadding(false);
         layout.setSpacing(false);
@@ -82,7 +89,7 @@ public class LogsView extends Div {
         return mobileFilters;
     }
 
-    public static class Filters extends Div implements Specification<SamplePerson> {
+    public static class Filters extends Div implements Specification<LogInfo> {
 
         private final TextField name = new TextField("Name");
         private final TextField phone = new TextField("Phone");
@@ -144,7 +151,7 @@ public class LogsView extends Div {
         }
 
         @Override
-        public Predicate toPredicate(Root<SamplePerson> root, CriteriaQuery<?> query, CriteriaBuilder criteriaBuilder) {
+        public Predicate toPredicate(Root<LogInfo> root, CriteriaQuery<?> query, CriteriaBuilder criteriaBuilder) {
             List<Predicate> predicates = new ArrayList<>();
 
             if (!name.isEmpty()) {
@@ -217,18 +224,40 @@ public class LogsView extends Div {
     }
 
     private Component createGrid() {
-        grid = new Grid<>(SamplePerson.class, false);
-        grid.addColumn("firstName").setAutoWidth(true);
-        grid.addColumn("lastName").setAutoWidth(true);
-        grid.addColumn("email").setAutoWidth(true);
-        grid.addColumn("phone").setAutoWidth(true);
-        grid.addColumn("dateOfBirth").setAutoWidth(true);
-        grid.addColumn("occupation").setAutoWidth(true);
-        grid.addColumn("role").setAutoWidth(true);
+        DataProvider<LogInfo, Void> dataProvider =
+                DataProvider.fromCallbacks(
+                        // First callback fetches items based on a query
+                        query -> {
+                            // The index of the first item to load
+                            int offset = query.getOffset();
 
-        grid.setItems(query -> samplePersonService.list(
+                            // The number of items to load
+                            int limit = query.getLimit();
+
+                            Page<LogInfo> persons = logService.list(
+                                    PageRequest.of(query.getPage(), query.getPageSize(), VaadinSpringDataHelpers.toSpringDataSort(query)),
+                                    filters);
+
+                            return persons.stream();
+                        },
+                        // Second callback fetches the total number of items currently in the Grid.
+                        // The grid can then use it to properly adjust the scrollbars.
+                        query -> logService.count());
+
+        grid = new Grid<>(LogInfo.class);
+        grid.setPageSize(10000000);
+        grid.setDataProvider(dataProvider);
+//        grid.addColumn("date").setAutoWidth(true);
+//        grid.addColumn("threadName").setAutoWidth(true);
+//        grid.addColumn("logLevel").setAutoWidth(true);
+//        grid.addColumn("className").setAutoWidth(true);
+//        grid.addColumn("message").setAutoWidth(true);
+
+
+        grid.setItems(query -> logService.list(
                 PageRequest.of(query.getPage(), query.getPageSize(), VaadinSpringDataHelpers.toSpringDataSort(query)),
                 filters).stream());
+
         grid.addThemeVariants(GridVariant.LUMO_NO_BORDER);
         grid.addClassNames(LumoUtility.Border.TOP, LumoUtility.BorderColor.CONTRAST_10);
 
