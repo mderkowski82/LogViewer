@@ -1,0 +1,7 @@
+@import url('./main-layout.css');
+@import url('./views/logs-view.css');    html {
+      --lumo-line-height-m: 1.4;
+      --lumo-line-height-s: 1.2;
+      --lumo-line-height-xs: 1.1;
+
+    }
