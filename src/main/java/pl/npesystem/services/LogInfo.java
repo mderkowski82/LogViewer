@@ -8,13 +8,13 @@ import java.util.regex.*;
 
 public class LogInfo {
 	final String regex = "(\\d{1,2}\\.\\d{1,2}\\W\\d{1,2}:\\d{1,2}:\\d{1,2},\\d{1,3})\\s+(Thread-\\d{1,4}\\s+\\(Ac[a-z]+\\.\\.[0-9]+\\)|EJB\\Wasync\\W-\\W[\\w\\.]+\\W-\\W[\\w\\.]+)\\s+(DEBUG|WARN|INFO|TRACE)\\s+(\\S*)\\s+(.*)";
-	private LocalDate date;
+	private LocalDateTime date;
 	private String threadName;
 	private LogLevel logLevel;
 	private String className;
 	private String message;
 
-	public LogInfo(LocalDate date, String threadName, LogLevel logLevel, String className, String message) {
+	public LogInfo(LocalDateTime date, String threadName, LogLevel logLevel, String className, String message) {
 		this.date = date;
 		this.threadName = threadName;
 		this.logLevel = logLevel;
@@ -41,8 +41,7 @@ public class LogInfo {
 				try {
 					Date parse = sdf.parse(matcher.group(1));
 					parse.setYear(2024 - 1900);
-					this.date = parse.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
-
+					this.date = parse.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime();
 				} catch (Exception e) {
 
 				}
@@ -53,20 +52,21 @@ public class LogInfo {
 				this.message = matcher.group(5);
 			} else {
 				System.out.println(row);
+				throw new IllegalStateException("No match found");
 			}
 
 
 		} catch (IllegalStateException e) {
-			System.out.println("No match found");
+			throw new IllegalStateException("No match found");
 		}
 
 	}
 
-	public LocalDate getDate() {
+	public LocalDateTime getDate() {
 		return date;
 	}
 
-	public void setDate(LocalDate date) {
+	public void setDate(LocalDateTime date) {
 		this.date = date;
 	}
 

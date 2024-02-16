@@ -19,6 +19,7 @@ import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.provider.*;
+import com.vaadin.flow.data.renderer.*;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.spring.data.VaadinSpringDataHelpers;
@@ -30,8 +31,7 @@ import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Root;
 
 import java.io.*;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 import org.springframework.data.domain.*;
 import org.springframework.data.jpa.domain.Specification;
@@ -226,14 +226,9 @@ public class LogsView extends Div {
     private Component createGrid() {
         DataProvider<LogInfo, Void> dataProvider =
                 DataProvider.fromCallbacks(
+
                         // First callback fetches items based on a query
                         query -> {
-                            // The index of the first item to load
-                            int offset = query.getOffset();
-
-                            // The number of items to load
-                            int limit = query.getLimit();
-
                             Page<LogInfo> persons = logService.list(
                                     PageRequest.of(query.getPage(), query.getPageSize(), VaadinSpringDataHelpers.toSpringDataSort(query)),
                                     filters);
@@ -247,16 +242,18 @@ public class LogsView extends Div {
         grid = new Grid<>(LogInfo.class);
         grid.setPageSize(10000000);
         grid.setDataProvider(dataProvider);
-//        grid.addColumn("date").setAutoWidth(true);
-//        grid.addColumn("threadName").setAutoWidth(true);
-//        grid.addColumn("logLevel").setAutoWidth(true);
-//        grid.addColumn("className").setAutoWidth(true);
-//        grid.addColumn("message").setAutoWidth(true);
+        grid.removeAllColumns();
+
+        grid.addColumn("date").setRenderer(new LocalDateTimeRenderer<>(LogInfo::getDate, "dd.MM HH:mm:ss")).setFlexGrow(0).setAutoWidth(true);
+        grid.addColumn("threadName").setFlexGrow(0).setAutoWidth(true);
+        grid.addColumn("logLevel").setFlexGrow(0).setAutoWidth(true);
+        grid.addColumn("className").setFlexGrow(0).setAutoWidth(true);
+        grid.addColumn("message");
 
 
-        grid.setItems(query -> logService.list(
-                PageRequest.of(query.getPage(), query.getPageSize(), VaadinSpringDataHelpers.toSpringDataSort(query)),
-                filters).stream());
+//        grid.setItems(query -> logService.list(
+//                PageRequest.of(query.getPage(), query.getPageSize(), VaadinSpringDataHelpers.toSpringDataSort(query)),
+//                filters).stream());
 
         grid.addThemeVariants(GridVariant.LUMO_NO_BORDER);
         grid.addClassNames(LumoUtility.Border.TOP, LumoUtility.BorderColor.CONTRAST_10);

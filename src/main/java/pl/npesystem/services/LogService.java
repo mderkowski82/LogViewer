@@ -25,10 +25,14 @@ public class LogService {
             BufferedReader reader = new BufferedReader(new FileReader(file));
             String line;
             while ((line = reader.readLine()) != null) {
-                logInfos.add(new LogInfo(line));
+                try {
+                    logInfos.add(new LogInfo(line));
+                } catch (Exception e) {
+                    System.out.println(e.getMessage());
+                }
             }
         } catch (IOException e) {
-            e.printStackTrace();
+            e.getMessage();
         }
     }
 
@@ -41,6 +45,39 @@ public class LogService {
 
     public Page<LogInfo> list(Pageable pageable, Specification<LogInfo> filter) {
 //        return repository.findAll(filter, pageable);
+        Sort sort = pageable.getSort();
+        List<LogInfo> logInfos = this.logInfos;
+        if (sort.isSorted()) {
+            logInfos.sort((o1, o2) -> {
+                int result = 0;
+                for (Sort.Order order : sort) {
+                    switch (order.getProperty()) {
+                        case "date":
+                            result = o1.getDate().compareTo(o2.getDate());
+                            break;
+                        case "threadName":
+                            result = o1.getThreadName().compareTo(o2.getThreadName());
+                            break;
+                        case "logLevel":
+                            result = o1.getLogLevel().compareTo(o2.getLogLevel());
+                            break;
+                        case "className":
+                            result = o1.getClassName().compareTo(o2.getClassName());
+                            break;
+                        case "message":
+                            result = o1.getMessage().compareTo(o2.getMessage());
+                            break;
+                    }
+                    if (result != 0) {
+                        return order.isAscending() ? result : -result;
+                    }
+                }
+				return result;
+			});
+        }  else {
+            logInfos.sort(Comparator.comparing(LogInfo::getDate));
+        }
+
         return new PageImpl<>(logInfos, pageable, logInfos.size());
     }
 
