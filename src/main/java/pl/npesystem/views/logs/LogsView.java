@@ -240,7 +240,7 @@ public class LogsView extends Div {
                         query -> logService.count());
 
         grid = new Grid<>(LogInfo.class);
-        grid.setPageSize(10000000);
+        grid.setPageSize(50);
         grid.setDataProvider(dataProvider);
         grid.removeAllColumns();
 

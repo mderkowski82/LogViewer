@@ -45,6 +45,7 @@ public class LogService {
 
     public Page<LogInfo> list(Pageable pageable, Specification<LogInfo> filter) {
 //        return repository.findAll(filter, pageable);
+        System.out.println((int) pageable.getOffset() + "   " + pageable.getPageSize());
         Sort sort = pageable.getSort();
         List<LogInfo> logInfos = this.logInfos;
         if (sort.isSorted()) {
@@ -78,7 +79,7 @@ public class LogService {
             logInfos.sort(Comparator.comparing(LogInfo::getDate));
         }
 
-        return new PageImpl<>(logInfos, pageable, logInfos.size());
+        return new PageImpl<>(logInfos.subList(pageable.getPageNumber() * 50, (pageable.getPageNumber() * 50) + 50  ), pageable, logInfos.size());
     }
 
     public int count() {
